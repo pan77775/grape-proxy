@@ -1,46 +1,46 @@
-const express = require("express");
 const fetch = require("node-fetch");
-const multer = require("multer");
-const cors = require("cors");
 const FormData = require("form-data");
 
-const app = express();
-const upload = multer();
-
-app.use(cors());
-app.options("*", cors());
-
-app.post("/detect", upload.single("file"), async (req, res) => {
-  try {
-    const form = new FormData();
-    form.append("file", req.file.buffer, {
-      filename: req.file.originalname,
-      contentType: req.file.mimetype
-    });
-
-    const response = await fetch("http://220.128.130.212:9000/detect/", {
-      method: "POST",
-      body: form,
-      headers: form.getHeaders(),
-    });
-
-    const resultBuffer = await response.buffer();
-    res.set({
-      "Content-Type": response.headers.get("content-type") || "image/jpeg",
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
-    });
-    res.send(resultBuffer);
-  } catch (err) {
-    console.error("Proxy error:", err);
-    res.set({
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
-    });
-    res.status(500).send("Proxy failed.");
+module.exports = async (req, res) => {
+  if (req.method === "OPTIONS") {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    res.status(200).end();
+    return;
   }
-});
 
-module.exports = app;
+  if (req.method !== "POST") {
+    res.status(405).json({ message: "Only POST allowed" });
+    return;
+  }
+
+  try {
+    const chunks = [];
+    req.on("data", (chunk) => chunks.push(chunk));
+    req.on("end", async () => {
+      const buffer = Buffer.concat(chunks);
+
+      const form = new FormData();
+      form.append("file", buffer, {
+        filename: "uploaded.jpg",
+        contentType: req.headers["content-type"] || "image/jpeg",
+      });
+
+      const response = await fetch("http://220.128.130.212:9000/detect/", {
+        method: "POST",
+        body: form,
+        headers: form.getHeaders(),
+      });
+
+      const resultBuffer = await response.buffer();
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      res.setHeader("Content-Type", response.headers.get("content-type") || "image/jpeg");
+      res.send(resultBuffer);
+    });
+  } catch (error) {
+    console.error("Proxy error:", error);
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.status(500).send("Proxy failed");
+  }
+};
