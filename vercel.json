@@ -2,6 +2,6 @@
   "rewrites": [
     {
       "source": "/detect",
-      "destination": "http://220.128.130.212:9000/detect"
+      "destination": "http://220.128.130.212:9000/detect/"
     }
 }
