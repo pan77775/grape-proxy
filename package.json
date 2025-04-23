@@ -1,6 +1,9 @@
 {
+  "name": "grape-proxy",
+  "version": "1.0.0",
+  "description": "Proxy for grape leaf disease detection API",
+  "main": "index.js",
   "dependencies": {
     "node-fetch": "^2.6.9"
-    // 其他依賴項...
   }
 }
